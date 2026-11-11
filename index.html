@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rasa | Four audio plugins by Abhinav Penumudy</title>
+<meta name="description" content="Rasa: a wavetable synth, an effects chain, a vocal chain and a loop sampler. Four audio plugins created by Abhinav Penumudy.">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="assets/img/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rozha+One&family=M+PLUS+Rounded+1c:wght@500;700&display=swap" rel="stylesheet">
+<style>
+@property --bg-inner { syntax: '<color>'; inherits: true; initial-value: #8a3f62; }
+@property --bg-mid   { syntax: '<color>'; inherits: true; initial-value: #4a2440; }
+@property --bg-outer { syntax: '<color>'; inherits: true; initial-value: #150b14; }
+
+:root {
+    color-scheme: dark;
+    --text: #fff9f3;
+    --muted: #e3d5d6;
+    --line: rgba(255, 249, 243, 0.16);
+    --pink: #f4c3d0;
+    --ink: #2a1830;
+    --font-main: 'M PLUS Rounded 1c', system-ui, sans-serif;
+    --font-heading: 'Rozha One', Georgia, serif;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    scrollbar-color: #6b4a63 #150b14;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+::selection { background: var(--pink); color: var(--ink); }
+
+body {
+    color: var(--text);
+    font-family: var(--font-main);
+    font-weight: 500;
+    line-height: 1.6;
+    background: var(--bg-outer);
+    overflow-x: hidden;
+    transition: --bg-inner 1.2s ease-in-out, --bg-mid 1.2s ease-in-out, --bg-outer 1.2s ease-in-out;
+}
+
+/* The dusk behind everything. Fixed, so the sections below the hero share it. */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background: radial-gradient(circle at center, var(--bg-inner) 0%, var(--bg-mid) 50%, var(--bg-outer) 100%);
+}
+
+a { color: inherit; text-underline-offset: 0.2em; }
+:focus-visible { outline: 2px solid var(--pink); outline-offset: 3px; border-radius: 4px; }
+button { font: inherit; color: inherit; }
+svg.icon { width: 1em; height: 1em; fill: currentColor; flex: none; }
+
+.skip { position: absolute; left: 1rem; top: -4rem; z-index: 300; background: var(--pink); color: var(--ink); padding: 0.6rem 1rem; border-radius: 8px; font-weight: 700; }
+.skip:focus { top: 1rem; }
+
+/* Header */
+.header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.1rem 4%; position: fixed; top: 0; width: 100%; z-index: 200; border-bottom: 1px solid transparent; transition: background 0.3s, border-color 0.3s; }
+.header.scrolled { background: rgba(18, 10, 18, 0.92); border-bottom-color: var(--line); }
+.logo { font-family: var(--font-heading); font-size: 1.6rem; text-decoration: none; line-height: 1; }
+.nav { display: flex; gap: 2rem; }
+.nav a { color: var(--muted); text-decoration: none; font-size: 0.95rem; padding: 0.4rem 0; border-bottom: 2px solid transparent; transition: color 0.2s, border-color 0.2s; }
+.nav a:hover { color: var(--text); }
+.nav a.active { color: var(--text); border-bottom-color: var(--pink); }
+.contact { font-weight: 700; font-size: 0.95rem; text-decoration: none; padding: 0.6rem 1.3rem; border: 1px solid var(--line); border-radius: 100px; transition: background 0.2s, color 0.2s, border-color 0.2s; }
+.contact:hover { background: var(--pink); color: var(--ink); border-color: var(--pink); }
+
+/* Hero */
+.hero { height: 100vh; min-height: 640px; padding: 4.5rem 4% 0; position: relative; }
+.hero-content { display: flex; justify-content: space-between; align-items: stretch; height: 100%; position: relative; }
+
+.title { font-family: var(--font-heading); font-weight: 400; line-height: 0.95; white-space: nowrap; }
+.main-title { font-size: clamp(3.2rem, 6vw, 6rem); }
+.side-title { font-size: clamp(2rem, 3.4vw, 3.6rem); text-align: right; }
+.title .accent { color: var(--pink); }
+
+.hero-left { display: flex; flex-direction: column; gap: 1.4rem; padding: 5.5rem 0 3rem; z-index: 100; width: 27vw; }
+.description { color: var(--muted); font-size: 1.05rem; max-width: 23rem; min-height: 6.6em; }
+.credit { margin-top: auto; font-size: 0.95rem; color: var(--muted); }
+.credit strong { color: var(--text); }
+
+.primary-btn { display: inline-flex; align-items: center; gap: 0.8rem; background: var(--pink); color: var(--ink); border: none; padding: 0.8rem 1.5rem; border-radius: 100px; font-weight: 700; font-size: 0.98rem; cursor: pointer; width: fit-content; transition: transform 0.3s var(--ease), background 0.2s; }
+.primary-btn:hover { background: #fff9f3; transform: translateY(-2px); }
+.status { min-height: 1.5em; font-size: 0.88rem; color: var(--muted); margin-top: -0.7rem; }
+
+/* The plugin window in the middle. It leans toward the pointer. */
+.hero-center { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; z-index: 1; pointer-events: none; perspective: 1400px; }
+.spinner { transform-style: preserve-3d; }
+.window { width: min(40vw, 66vh); border-radius: 14px; overflow: hidden; background: var(--ink); box-shadow: 0 40px 90px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--line); will-change: transform; }
+.window img { display: block; width: 100%; height: auto; }
+
+/* Tanpura strings, far behind */
+.strings { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0.14; }
+.strings svg { width: 100%; height: 100%; }
+
+/* Right column: the four plugins */
+.hero-right { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; padding: 5.5rem 0 3rem; z-index: 100; width: 27vw; }
+.carousel { display: flex; flex-direction: column; gap: 1rem; align-items: flex-end; }
+.cards { display: flex; gap: 0.6rem; }
+.card { background: rgba(255, 249, 243, 0.06); border: 1px solid var(--line); padding: 0.5rem 0.5rem 0.7rem; border-radius: 16px; display: flex; flex-direction: column; gap: 0.6rem; cursor: pointer; width: clamp(76px, 6vw, 96px); text-align: center; line-height: 1.3; transition: background 0.3s, border-color 0.3s; }
+.card:hover { background: rgba(255, 249, 243, 0.13); border-color: rgba(255, 249, 243, 0.45); }
+.card[aria-pressed="true"] { border-color: var(--pink); background: rgba(244, 195, 208, 0.14); }
+.card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; object-position: top; border-radius: 9px; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4); transition: transform 0.5s var(--ease); }
+.card:hover img { transform: translateY(-6px) scale(1.06); }
+.card span { font-size: 0.78rem; font-weight: 700; display: block; }
+.card small { font-size: 0.72rem; color: var(--muted); display: block; }
+.arrows { display: flex; gap: 0.6rem; }
+.arrow { background: transparent; border: 1px solid var(--line); width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: grid; place-items: center; font-size: 1.1rem; transition: background 0.2s, color 0.2s, border-color 0.2s; }
+.arrow:hover { background: var(--pink); color: var(--ink); border-color: var(--pink); }
+
+/* Sections under the hero */
+section.block { padding: 7rem 4% 2rem; max-width: 1180px; margin: 0 auto; scroll-margin-top: 3rem; }
+.block h2 { font-family: var(--font-heading); font-weight: 400; font-size: clamp(2rem, 3.2vw, 2.8rem); line-height: 1.05; margin-bottom: 0.7rem; text-wrap: balance; }
+.block .lede { color: var(--muted); font-size: 1.08rem; max-width: 38rem; margin-bottom: 2.4rem; }
+
+.video-wrap { position: relative; border-radius: 14px; overflow: hidden; background: #0f0910; box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--line); aspect-ratio: 16 / 9; }
+.video-wrap video { width: 100%; height: 100%; display: block; }
+.video-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin-top: 1.2rem; min-height: 2.8rem; color: var(--muted); font-size: 0.92rem; }
+.sound-btn { display: inline-flex; align-items: center; gap: 0.6rem; background: var(--pink); color: var(--ink); border: none; padding: 0.65rem 1.2rem; border-radius: 100px; font-weight: 700; font-size: 0.92rem; cursor: pointer; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35); transition: transform 0.3s var(--ease), background 0.2s; }
+.sound-btn:hover { background: #fff9f3; transform: translateY(-2px); }
+.video-missing { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 2rem; color: var(--muted); }
+[hidden] { display: none !important; }
+
+.plugin { display: grid; grid-template-columns: 1.1fr 1fr; gap: 3rem; align-items: center; padding: 3rem 0; border-top: 1px solid var(--line); }
+.plugin:nth-of-type(even) .shot { order: 2; }
+.plugin .shot { border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--line); }
+.plugin .shot img { display: block; width: 100%; height: auto; }
+.plugin h3 { font-family: var(--font-heading); font-weight: 400; font-size: 2rem; line-height: 1.1; }
+.plugin .kind { color: var(--pink); margin-bottom: 0.9rem; }
+.plugin p { color: var(--muted); max-width: 34rem; }
+.plugin ul { margin: 1rem 0 1.4rem 1.1rem; color: var(--muted); }
+.plugin li { margin-bottom: 0.25rem; }
+.clips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.clip { display: inline-flex; align-items: center; gap: 0.5rem; background: transparent; border: 1px solid var(--line); font-weight: 700; font-size: 0.86rem; padding: 0.55rem 1rem; border-radius: 100px; cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s; }
+.clip svg { font-size: 0.8em; }
+.clip:hover { border-color: rgba(255, 249, 243, 0.5); }
+.clip[aria-pressed="true"] { background: var(--pink); color: var(--ink); border-color: var(--pink); }
+
+.download { display: grid; grid-template-columns: 1fr 1.3fr; gap: 1.6rem 3rem; padding-top: 2.4rem; border-top: 1px solid var(--line); }
+.get { display: flex; flex-direction: column; gap: 0.9rem; }
+.get .primary-btn { text-decoration: none; font-size: 1.05rem; padding: 0.95rem 1.7rem; }
+.dl-other { color: var(--muted); }
+.dl-table { width: 100%; border-collapse: collapse; grid-row: span 2; }
+.dl-table th, .dl-table td { text-align: left; padding: 0.75rem 0.5rem; border-bottom: 1px solid var(--line); }
+.dl-table thead th { color: var(--muted); font-weight: 500; font-size: 0.92rem; }
+.dl-table tbody th { font-weight: 700; }
+.dl-table tbody th span { display: block; color: var(--muted); font-weight: 500; font-size: 0.86rem; }
+.dl-table a { font-weight: 700; }
+.dl-table a:hover { color: var(--pink); }
+.dl-notes h3 { font-size: 1.05rem; margin-bottom: 0.6rem; }
+.dl-notes ol { color: var(--muted); margin: 0 0 1rem 1.2rem; max-width: 30rem; }
+.dl-notes li { margin-bottom: 0.35rem; padding-left: 0.2rem; }
+.dl-req { color: var(--muted); font-size: 0.9rem; max-width: 30rem; }
+.about { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; padding-top: 2.4rem; border-top: 1px solid var(--line); }
+.about h3 { font-size: 1.1rem; margin-bottom: 0.6rem; }
+.about p { color: var(--muted); max-width: 34rem; margin-bottom: 1rem; }
+.about strong { color: var(--text); }
+
+footer { padding: 5rem 4% 3rem; text-align: center; color: var(--muted); font-size: 0.92rem; }
+
+@media (max-width: 1000px) {
+    .header { position: static; flex-wrap: wrap; padding-bottom: 0; }
+    .nav { order: 3; width: 100%; gap: 1.4rem; overflow-x: auto; }
+    .hero { height: auto; min-height: 0; padding: 0 4% 2rem; }
+    .hero-content { flex-direction: column; gap: 2rem; }
+    .hero-left, .hero-right { width: 100%; padding: 2rem 0 0; align-items: flex-start; }
+    .description { min-height: 0; }
+    .credit { margin-top: 0.4rem; }
+    .hero-center { position: static; order: 2; }
+    .hero-left { order: 1; }
+    .hero-right { order: 3; }
+    .window { width: 100%; }
+    .strings { display: none; }
+    .carousel { align-items: flex-start; }
+    .card { width: 21vw; }
+    .side-title { display: none; }
+    .plugin, .about, .download { grid-template-columns: 1fr; gap: 1.6rem; }
+    .dl-table { grid-row: auto; }
+    .plugin:nth-of-type(even) .shot { order: 0; }
+    section.block { padding-top: 4rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    body, .card img, .primary-btn, .sound-btn { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="5" y="4" width="5" height="16" rx="1.2"/><rect x="14" y="4" width="5" height="16" rx="1.2"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="M14.5 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="M9.5 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5v5a1 1 0 0 0 1 1h3l4.4 3.7a1 1 0 0 0 1.6-.8V5.6a1 1 0 0 0-1.6-.8L8 8.5H5a1 1 0 0 0-1 1z"/><path d="M17 8.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+</svg>
+
+<a class="skip" href="#demo">Skip to the demo</a>
+
+<header class="header" id="header">
+    <a class="logo" href="#top" aria-label="Rasa, back to top">Rasa</a>
+    <nav class="nav" aria-label="Sections">
+        <a href="#top" class="active">Plugins</a>
+        <a href="#demo">Demo</a>
+        <a href="#inside">Inside</a>
+        <a href="#download">Download</a>
+        <a href="#about">About</a>
+    </nav>
+    <a class="contact" href="mailto:penumudyabhi@gmail.com">Contact</a>
+</header>
+
+<main>
+<section class="hero" id="top">
+    <div class="hero-content">
+
+        <div class="strings" aria-hidden="true">
+            <svg viewBox="0 0 1200 800" preserveAspectRatio="none" fill="none" stroke="#fff9f3" stroke-width="1">
+                <path d="M0 250 Q600 290 1200 240" /><path d="M0 290 Q600 335 1200 285" /><path d="M0 330 Q600 380 1200 330" />
+                <path d="M0 370 Q600 425 1200 375" /><path d="M0 410 Q600 470 1200 420" /><path d="M0 450 Q600 515 1200 465" />
+                <path d="M0 490 Q600 560 1200 510" />
+            </svg>
+        </div>
+
+        <div class="hero-left">
+            <h1 class="title main-title">Rasa<br><span class="accent" id="t-sub">Synth</span></h1>
+            <p class="description" id="t-desc"></p>
+            <button class="primary-btn" id="hear" aria-pressed="false">
+                <svg class="icon" aria-hidden="true"><use id="hear-icon" href="#i-play"/></svg>
+                <span id="hear-label">Hear it</span>
+            </button>
+            <p class="status" id="status" role="status"></p>
+            <p class="credit">Created by <strong>Abhinav Penumudy</strong></p>
+        </div>
+
+        <div class="hero-center">
+            <div class="spinner" id="spinner">
+                <div class="window" id="window">
+                    <img id="shot" src="assets/img/synth.jpg" alt="The Rasa synth: a dusk scene above eight plain knobs" width="1500" height="1119">
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-right">
+            <div class="carousel">
+                <div class="cards" role="group" aria-label="Choose a plugin">
+                    <button class="card" data-plugin="synth" aria-pressed="true"><img src="assets/img/synth.jpg" alt=""><div><span>Rasa</span><small>Synth</small></div></button>
+                    <button class="card" data-plugin="efx" aria-pressed="false"><img src="assets/img/efx.jpg" alt=""><div><span>Rasa efx</span><small>Effects</small></div></button>
+                    <button class="card" data-plugin="vocals" aria-pressed="false"><img src="assets/img/vocals.jpg" alt=""><div><span>Rasa Vocals</span><small>Vocal chain</small></div></button>
+                    <button class="card" data-plugin="loops" aria-pressed="false"><img src="assets/img/loops.jpg" alt=""><div><span>Rasa Loops</span><small>Sampler</small></div></button>
+                </div>
+                <div class="arrows">
+                    <button class="arrow" id="prev" aria-label="Previous plugin" title="Previous plugin (left arrow key)"><svg class="icon" aria-hidden="true"><use href="#i-left"/></svg></button>
+                    <button class="arrow" id="next" aria-label="Next plugin" title="Next plugin (right arrow key)"><svg class="icon" aria-hidden="true"><use href="#i-right"/></svg></button>
+                </div>
+            </div>
+            <p class="title side-title" aria-hidden="true"><span id="t-side1">Nine</span><br><span class="accent" id="t-side2">Feelings</span></p>
+        </div>
+    </div>
+</section>
+
+<section class="block" id="demo">
+    <h2>See them work</h2>
+    <p class="lede">Two minutes through all four plugins. Every picture and every sound in it was rendered by the plugins themselves.</p>
+    <div class="video-wrap">
+        <video id="demo-video" muted loop playsinline controls preload="metadata" poster="assets/img/demo-poster.jpg" src="assets/demo.mp4" aria-label="Demo of the four Rasa plugins"></video>
+        <p class="video-missing" id="demo-missing" hidden>The demo video could not load. The previews below were rendered by the plugins themselves.</p>
+    </div>
+    <p class="video-actions"><button class="sound-btn" id="sound" hidden><svg class="icon" aria-hidden="true"><use href="#i-sound"/></svg><span>Play from the start with sound</span></button> <span id="sound-note" hidden>It plays silently by itself. Sound needs one press.</span></p>
+</section>
+
+<section class="block" id="inside">
+    <h2>Inside each plugin</h2>
+    <p class="lede">Every plugin opens on a simple page with a handful of plain knobs. The full controls sit one tab behind it. Press a name to hear a preview.</p>
+
+    <article class="plugin">
+        <div class="shot"><img src="assets/img/synth-design.jpg" alt="The synth's Sound Design page with its oscillators and filters" loading="lazy" width="1500" height="1119"></div>
+        <div>
+            <h3>Rasa</h3>
+            <p class="kind">Wavetable synth</p>
+            <p>A soft synth with more than 300 sounds, browsed by the feeling they give. Rasa is the idea, from Indian performance, that a performance exists to give its listener a feeling.</p>
+            <ul>
+                <li>Three wavetable oscillators, plus sub and noise</li>
+                <li>Two filters, four envelopes, six LFOs and a modulation matrix</li>
+                <li>Ten built-in effects</li>
+            </ul>
+            <div class="clips">
+                <button class="clip" data-clip="synth-velvet-dream" aria-pressed="false">Velvet Dream</button>
+                <button class="clip" data-clip="synth-dream-saw-lead" aria-pressed="false">Dream Saw Lead</button>
+                <button class="clip" data-clip="synth-reese-wide" aria-pressed="false">Reese Wide</button>
+                <button class="clip" data-clip="synth-rhodes-dream" aria-pressed="false">Tine Dream</button>
+            </div>
+        </div>
+    </article>
+
+    <article class="plugin">
+        <div class="shot"><img src="assets/img/efx-chroma.jpg" alt="The AutoChroma page in Rasa efx" loading="lazy" width="1500" height="1119"></div>
+        <div>
+            <h3>Rasa efx</h3>
+            <p class="kind">Effects</p>
+            <p>Six effects in one chain, for any sound in a song. Compare the dry clip with each chain.</p>
+            <ul>
+                <li>Distortion, Shapes, Motion, Wormhole, Squeeze and AutoChroma</li>
+                <li>Each effect stays off until you turn it on</li>
+                <li>Follows the song's tempo</li>
+            </ul>
+            <div class="clips">
+                <button class="clip" data-clip="efx-dry" aria-pressed="false">Dry</button>
+                <button class="clip" data-clip="efx-dream-wash" aria-pressed="false">Dream Wash</button>
+                <button class="clip" data-clip="efx-glitch-machine" aria-pressed="false">Glitch Machine</button>
+                <button class="clip" data-clip="efx-hyper-pop-shine" aria-pressed="false">Hyper Pop Shine</button>
+                <button class="clip" data-clip="efx-sidechain-pump" aria-pressed="false">Sidechain Pump</button>
+            </div>
+        </div>
+    </article>
+
+    <article class="plugin">
+        <div class="shot"><img src="assets/img/vocals-eq.jpg" alt="The EQ page in Rasa Vocals" loading="lazy" width="1500" height="1119"></div>
+        <div>
+            <h3>Rasa Vocals</h3>
+            <p class="kind">Vocal chain</p>
+            <p>A whole vocal chain in one plugin. Compare the dry voice with each preset.</p>
+            <ul>
+                <li>Thirteen effects in order, from Noise Gate to Limiter</li>
+                <li>Pitch Lock tuning, a doubler, delay and reverb</li>
+                <li>Input and output meters with loudness in LUFS</li>
+            </ul>
+            <div class="clips">
+                <button class="clip" data-clip="vocals-dry" aria-pressed="false">Dry</button>
+                <button class="clip" data-clip="vocals-clean-pop" aria-pressed="false">Clean Pop Vocal</button>
+                <button class="clip" data-clip="vocals-wide-hook" aria-pressed="false">Wide Hook</button>
+                <button class="clip" data-clip="vocals-monster-voice" aria-pressed="false">Monster Voice</button>
+            </div>
+        </div>
+    </article>
+
+    <article class="plugin">
+        <div class="shot"><img src="assets/img/loops-pads.jpg" alt="The Chop Pads page in Rasa Loops" loading="lazy" width="1500" height="1260"></div>
+        <div>
+            <h3>Rasa Loops</h3>
+            <p class="kind">Loop and chop sampler</p>
+            <p>Chop a sample, pick the parts you like, and it finds the point where the end runs back into the start.</p>
+            <ul>
+                <li>Chops at beats or at hits</li>
+                <li>Drag the finished loop straight into your song</li>
+                <li>Chop Pads plays each chop from the keyboard</li>
+            </ul>
+            <div class="clips">
+                <button class="clip" data-clip="loops-sample" aria-pressed="false">The sample</button>
+                <button class="clip" data-clip="loops-loop" aria-pressed="false">The loop</button>
+            </div>
+        </div>
+    </article>
+</section>
+
+<section class="block" id="download">
+    <h2>Download</h2>
+    <p class="lede">All four plugins are free. Each download is a zip with an installer and a short how-to.</p>
+    <div class="download">
+        <div class="get">
+            <a class="primary-btn" id="dl-main" href="https://github.com/8piecesbck/LoveSick-Downloads/releases/latest/download/Rasa-Mac.zip">
+                <svg class="icon" aria-hidden="true"><use href="#i-down"/></svg>
+                <span id="dl-main-label">All four for Mac</span>
+            </a>
+            <p class="dl-other" id="dl-other">Or <a href="https://github.com/8piecesbck/LoveSick-Downloads/releases/latest/download/Rasa-Windows.zip">all four for Windows</a>.</p>
+        </div>
+        <table class="dl-table">
+            <thead><tr><th scope="col">Plugin</th><th scope="col">Mac</th><th scope="col">Windows</th></tr></thead>
+            <tbody>
+                <tr><th scope="row">Rasa <span>Synth</span></th><td><a href="https://github.com/8piecesbck/LoveSick-Downloads/releases/latest/download/Rasa-Synth-Mac.zip" aria-label="Download Rasa for Mac">Mac</a></td><td><a href="https://github.com/8piecesbck/LoveSick-Downloads/releases/latest/download/Rasa-Synth-Windows.zip" aria-label="Download Rasa for Windows">Windows</a></td></tr>
+                <tr><th scope="row">Rasa efx <span>Effects</span></th><td><a href="https://github.com/8piecesbck/LoveSick-Downloads/releases/latest/download/Rasa-efx-Mac.zip" aria-label="Download Rasa efx for Mac">Mac</a></td><td><a href="https://github.com/8piecesbck/LoveSick-Downloads/releases/latest/download/Rasa-efx-Windows.zip" aria-label="Download Rasa efx for Windows">Windows</a></td></tr>
+                <tr><th scope="row">Rasa Vocals <span>Vocal chain</span></th><td><a href="https://github.com/8piecesbck/LoveSick-Downloads/releases/latest/download/Rasa-Vocals-Mac.zip" aria-label="Download Rasa Vocals for Mac">Mac</a></td><td><a href="https://github.com/8piecesbck/LoveSick-Downloads/releases/latest/download/Rasa-Vocals-Windows.zip" aria-label="Download Rasa Vocals for Windows">Windows</a></td></tr>
+                <tr><th scope="row">Rasa Loops <span>Sampler</span></th><td><a href="https://github.com/8piecesbck/LoveSick-Downloads/releases/latest/download/Rasa-Loops-Mac.zip" aria-label="Download Rasa Loops for Mac">Mac</a></td><td><a href="https://github.com/8piecesbck/LoveSick-Downloads/releases/latest/download/Rasa-Loops-Windows.zip" aria-label="Download Rasa Loops for Windows">Windows</a></td></tr>
+            </tbody>
+        </table>
+        <div class="dl-notes">
+            <h3>Getting started</h3>
+            <ol>
+                <li>Unzip the download and open the installer inside.</li>
+                <li>In FL Studio, go to Options &gt; Manage plugins and click Find plugins.</li>
+                <li>Open a Rasa plugin. It starts on the Perform page, with a few plain knobs to try.</li>
+            </ol>
+            <p class="dl-req">Mac: VST3 and Audio Unit, Apple Silicon and Intel, macOS 11 or newer. Windows: VST3, 64-bit.</p>
+        </div>
+    </div>
+</section>
+
+<section class="block" id="about">
+    <h2>How they were made</h2>
+    <p class="lede">The plugins are built in C++ with JUCE, as VST3 and Audio Unit. Nobody can listen to hundreds of presets fairly, so they are also measured.</p>
+    <div class="about">
+        <div>
+            <h3>The idea</h3>
+            <p>Most plugins show every control at once. Rasa opens on a scene and a few plain knobs, named for what you hear: Warmth, Space, Echo. The engine underneath stays one tab away for anyone who wants it.</p>
+            <p>The look comes from the sangeetam concert stage at dusk: silk, brass and the strings of a tanpura.</p>
+        </div>
+        <div>
+            <h3>The testing</h3>
+            <p>A set of tools renders every sound to audio and measures it. All <strong>302 synth sounds</strong> are compared with each other, and two that measure closer than 6 dB count as the same sound, so one gets rebuilt. At the last run, none were that close.</p>
+            <p>Another <strong>577 checks</strong> confirm that each synth effect control changes the sound without clicks, and <strong>68 more</strong> drive the interface without a mouse, from Undo to loading presets.</p>
+            <p>Created by Abhinav Penumudy. Questions are welcome at <a href="mailto:penumudyabhi@gmail.com">penumudyabhi@gmail.com</a>.</p>
+        </div>
+    </div>
+</section>
+</main>
+
+<footer>
+    Rasa. Created by Abhinav Penumudy. The plugins are free.
+</footer>
+
+<script>
+const PLUGINS = {
+    synth:  { sub: 'Synth',  side: ['Nine', 'Feelings'], img: 'synth.jpg',  clip: 'synth-velvet-dream', clipName: 'Velvet Dream',    bg: ['#8a3f62', '#4a2440', '#150b14'],
+              alt: 'The Rasa synth: a dusk scene above eight plain knobs',
+              desc: 'A soft wavetable synth. More than 300 sounds, browsed by the feeling they give, with eight plain knobs on top of a full engine.' },
+    efx:    { sub: 'efx',    side: ['Six', 'Effects'],   img: 'efx.jpg',    clip: 'efx-dream-wash',     clipName: 'Dream Wash',      bg: ['#6a55b8', '#33285e', '#0e0b1a'],
+              alt: 'Rasa efx: the effect chain above a dusk scene and six knobs',
+              desc: 'Six effects in one chain: Distortion, Shapes, Motion, Wormhole, Squeeze and AutoChroma. Each one stays off until you turn it on.' },
+    vocals: { sub: 'Vocals', side: ['One', 'Chain'],     img: 'vocals.jpg', clip: 'vocals-clean-pop',   clipName: 'Clean Pop Vocal', bg: ['#8f5c32', '#4d301c', '#160d08'],
+              alt: 'Rasa Vocals: thirteen effects in a row above a dusk scene and six knobs',
+              desc: 'A whole vocal chain in one plugin. Thirteen effects in order, from Noise Gate to Limiter, and presets that set them up for you.' },
+    loops:  { sub: 'Loops',  side: ['Chop', '& Loop'],   img: 'loops.jpg',  clip: 'loops-loop',         clipName: 'the loop',        bg: ['#5d4a6e', '#2e2438', '#0f0b13'],
+              alt: 'Rasa Loops: a chopped waveform with loop controls underneath',
+              desc: 'Chop a sample, pick the parts you like, and it finds the loop point. Then drag the loop straight into your song.' },
+};
+const ORDER = Object.keys(PLUGINS);
+const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = (id) => document.getElementById(id);
+const setIcon = (use, name) => use.setAttribute('href', '#i-' + name);
+
+const win = $('window'), spinner = $('spinner'), shot = $('shot'), strings = document.querySelector('.strings');
+const cards = [...document.querySelectorAll('.card')];
+let current = 'synth', turn = null, swapTimer = 0;
+
+ORDER.forEach((id) => { new Image().src = 'assets/img/' + PLUGINS[id].img; });
+
+function setText(id) {
+    const p = PLUGINS[id];
+    $('t-sub').textContent = p.sub;
+    $('t-desc').textContent = p.desc;
+    $('t-side1').textContent = p.side[0];
+    $('t-side2').textContent = p.side[1];
+}
+setText(current);
+
+function swapShot(id) {
+    shot.src = 'assets/img/' + PLUGINS[id].img;
+    shot.alt = PLUGINS[id].alt;
+}
+
+function switchPlugin(id) {
+    if (id === current) return;
+    current = id;
+    stopAudio();
+    cards.forEach((c) => c.setAttribute('aria-pressed', c.dataset.plugin === id));
+    const [inner, mid, outer] = PLUGINS[id].bg;
+    document.body.style.setProperty('--bg-inner', inner);
+    document.body.style.setProperty('--bg-mid', mid);
+    document.body.style.setProperty('--bg-outer', outer);
+    setText(id);
+
+    // A new choice always wins: whatever was turning stops, and this one starts.
+    turn?.cancel();
+    clearTimeout(swapTimer);
+    if (still || innerWidth <= 1000) { swapShot(id); return; }
+    // The one big move on the page: the window turns once and comes back as the next plugin.
+    turn = spinner.animate([
+        { transform: 'rotateY(0deg)', filter: 'blur(0px)', easing: 'cubic-bezier(0.5, 0, 0.9, 0.5)' },
+        { transform: 'rotateY(180deg)', filter: 'blur(10px)', offset: 0.4, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' },
+        { transform: 'rotateY(360deg)', filter: 'blur(0px)' },
+    ], { duration: 1300 });
+    swapTimer = setTimeout(() => swapShot(id), 480);
+}
+
+cards.forEach((c) => c.addEventListener('click', () => switchPlugin(c.dataset.plugin)));
+const step = (d) => switchPlugin(ORDER[(ORDER.indexOf(current) + d + ORDER.length) % ORDER.length]);
+$('prev').addEventListener('click', () => step(-1));
+$('next').addEventListener('click', () => step(1));
+addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { stopAudio(); video.muted = true; }
+    if (e.target.closest?.('video, input, textarea') || scrollY > innerHeight * 0.6) return;
+    if (e.key === 'ArrowLeft') step(-1);
+    if (e.key === 'ArrowRight') step(1);
+});
+
+// The window leans toward the pointer.
+const mouse = { x: 0, y: 0 }, eased = { x: 0, y: 0 };
+addEventListener('mousemove', (e) => { mouse.x = e.clientX / innerWidth - 0.5; mouse.y = e.clientY / innerHeight - 0.5; });
+let heroVisible = true;
+new IntersectionObserver(([e]) => { heroVisible = e.isIntersecting; }).observe($('top'));
+function frame() {
+    requestAnimationFrame(frame);
+    if (!heroVisible || document.hidden || innerWidth <= 1000) return;
+    eased.x += (mouse.x - eased.x) * 0.06;
+    eased.y += (mouse.y - eased.y) * 0.06;
+    win.style.transform = `rotateY(${eased.x * 16}deg) rotateX(${-eased.y * 10}deg)`;
+    strings.style.transform = `translate(${eased.x * -14}px, ${eased.y * -14}px)`;
+}
+if (!still) frame();
+
+// Previews: one player for the whole page.
+const audio = new Audio(), video = $('demo-video');
+let playing = null;
+function showPlaying(message) {
+    document.querySelectorAll('.clip').forEach((b) => {
+        const on = b.dataset.clip === playing;
+        b.setAttribute('aria-pressed', on);
+        setIcon(b.querySelector('use'), on ? 'pause' : 'play');
+    });
+    const hero = playing === PLUGINS[current].clip;
+    $('hear').setAttribute('aria-pressed', hero);
+    $('hear-label').textContent = hero ? 'Stop' : 'Hear it';
+    setIcon($('hear-icon'), hero ? 'pause' : 'play');
+    $('status').textContent = message ?? (hero ? 'Playing ' + PLUGINS[current].clipName + ', rendered by the plugin. Press Esc to stop.' : '');
+}
+function stopAudio(message) { audio.pause(); playing = null; showPlaying(typeof message === 'string' ? message : undefined); }
+function toggleClip(name) {
+    if (playing === name) return stopAudio();
+    video.muted = true; // one sound at a time
+    audio.src = 'assets/audio/' + name + '.m4a';
+    playing = name;
+    showPlaying('Loading the preview…');
+    audio.play().catch(() => stopAudio('That preview could not play. Check your connection and try again.'));
+}
+audio.addEventListener('ended', () => stopAudio());
+audio.addEventListener('playing', () => showPlaying());
+document.querySelectorAll('.clip').forEach((b) => {
+    b.insertAdjacentHTML('afterbegin', '<svg class="icon" aria-hidden="true"><use href="#i-play"/></svg>');
+    b.addEventListener('click', () => toggleClip(b.dataset.clip));
+});
+$('hear').addEventListener('click', () => toggleClip(PLUGINS[current].clip));
+
+// The demo plays by itself, silently, while it is on screen. Sound needs one press: browsers require it.
+const sound = $('sound');
+const showSound = () => { sound.hidden = $('sound-note').hidden = !video.muted || still || video.hidden; };
+const noVideo = () => { video.hidden = true; showSound(); $('demo-missing').hidden = false; };
+video.addEventListener('error', noVideo);
+if (video.error) noVideo(); // the failure can land before this script runs
+else if (!still) {
+    showSound();
+    new IntersectionObserver(([e]) => {
+        if (e.isIntersecting) video.play().catch(() => {});
+        else video.pause();
+    }, { threshold: 0.5 }).observe(video);
+}
+sound.addEventListener('click', () => { stopAudio(); video.muted = false; video.currentTime = 0; video.play(); });
+video.addEventListener('volumechange', showSound);
+
+// The big download button matches the visitor's computer. Phones get only the table.
+const BASE = 'https://github.com/8piecesbck/LoveSick-Downloads/releases/latest/download/';
+const ua = navigator.userAgent;
+if (/Windows/.test(ua)) {
+    $('dl-main').href = BASE + 'Rasa-Windows.zip';
+    $('dl-main-label').textContent = 'All four for Windows';
+    $('dl-other').innerHTML = 'Or <a href="' + BASE + 'Rasa-Mac.zip">all four for Mac</a>.';
+} else if (/iPhone|iPad|Android/.test(ua)) {
+    $('dl-main').hidden = true;
+    $('dl-other').textContent = 'The plugins run on a Mac or a Windows PC. Open this page there to download them.';
+}
+
+// Header: solid once the page scrolls, and the current section underlined.
+addEventListener('scroll', () => $('header').classList.toggle('scrolled', scrollY > 40), { passive: true });
+const links = [...document.querySelectorAll('.nav a')];
+const spy = new IntersectionObserver((entries) => entries.forEach((e) => {
+    if (e.isIntersecting) links.forEach((a) => { const on = a.getAttribute('href') === '#' + e.target.id; a.classList.toggle('active', on); on ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current'); });
+}), { rootMargin: '-45% 0px -45% 0px' });
+['top', 'demo', 'inside', 'download', 'about'].forEach((id) => spy.observe($(id)));
+</script>
+</body>
+</html>
